@@ -7,7 +7,7 @@ func myUtilFunc () -> String {
     return "test"
 }
 
-
+/// An extension to String
 extension String {
 
     // Adapted from https://stackoverflow.com/questions/32339717/how-to-remove-characters-from-a-string-in-swift
