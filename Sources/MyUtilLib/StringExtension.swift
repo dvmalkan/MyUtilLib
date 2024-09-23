@@ -25,4 +25,14 @@ public extension String {
         let range = startIndex..<endIndex
         return String (self[range])
     }
+    
+    // Find the first match of given regular expression. Return the matched string, if found
+    func regularExpressionFirstMatch (regex: NSRegularExpression) -> String? {
+        let range = regex.rangeOfFirstMatch (in: self, options: [], range: NSMakeRange (0, self.utf16.count))
+        if range.location == NSNotFound {
+            return nil
+        }
+        
+        return (self as NSString).substring (with: range)
+    }
 }
