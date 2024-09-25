@@ -29,6 +29,10 @@ public class SetExpressionProcessor {
     }
     
     public func evaluate (setElement: SetElement) throws -> Bool {
+        // first handle trivial case.
+        if rpnTokens.count <= 0 {
+            return true
+        }
         // initialize the stack
         var stack = Stack<SetToken>()
         

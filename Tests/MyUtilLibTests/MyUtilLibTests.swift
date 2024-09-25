@@ -1,6 +1,12 @@
 import Testing
 @testable import MyUtilLib
 
+@Test func tokenizerTestNull () async throws {
+    let tokenizer = SetTokenizer (input: "")
+    let tokens = tokenizer.process (setTokenDataList: getSetTokenDataList ())
+    #expect (tokens.count == 0)
+}
+
 @Test func tokenizerTestSample () async throws {
     let tokenizer = SetTokenizer (input: "Sample")
     let tokens = tokenizer.process (setTokenDataList: getSetTokenDataList ())
@@ -105,12 +111,19 @@ class StringElement: SetElement {
 
 @Test func setExpressionTestAgent1 () async throws {
     let stringElement = StringElement (value: "Agent")
-    let processor = SetExpressionProcessor (inputExpression: "A ~ B")
+    let processor = SetExpressionProcessor (inputExpression: "")
     let result = try! processor.evaluate (setElement: stringElement)
     #expect (result == true)
 }
 
 @Test func setExpressionTestAgent2 () async throws {
+    let stringElement = StringElement (value: "Agent")
+    let processor = SetExpressionProcessor (inputExpression: "A ~ B")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == true)
+}
+
+@Test func setExpressionTestAgent3 () async throws {
     let stringElement = StringElement (value: "Agent")
     let processor = SetExpressionProcessor (inputExpression: "A")
     let result = try! processor.evaluate (setElement: stringElement)
