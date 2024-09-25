@@ -14,9 +14,9 @@
             filePath = "Tests/MyUtilLibTests/MyUtilLibTests.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "5"
-            endingLineNumber = "5"
-            landmarkName = "tokenizerTest1()"
+            startingLineNumber = "12"
+            endingLineNumber = "12"
+            landmarkName = "tokenizerTestAgentSample1()"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -49,6 +49,22 @@
             startingLineNumber = "32"
             endingLineNumber = "32"
             landmarkName = "regularExpressionFirstMatch(regex:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "0925D5A7-DC6F-43BD-A942-95A14C443BB4"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Tests/MyUtilLibTests/MyUtilLibTests.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "98"
+            endingLineNumber = "98"
+            landmarkName = "evaluateAtomicOperand(operand:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
