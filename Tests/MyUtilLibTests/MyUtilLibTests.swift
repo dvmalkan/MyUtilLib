@@ -46,6 +46,21 @@ import Testing
     #expect (tokens[0] == SetToken.RangeOperand (1960, 1970))
 }
 
+@Test func tokenizerTestOr1 () async throws {
+    let tokenizer = SetTokenizer (input: "|")
+    let tokens = tokenizer.process (setTokenDataList: getSetTokenDataList ())
+    #expect (tokens.count == 1)
+    #expect (tokens[0] == SetToken.Or)
+}
+
+@Test func tokenizerTestOr2 () async throws {
+    let tokenizer = SetTokenizer (input: "| |")
+    let tokens = tokenizer.process (setTokenDataList: getSetTokenDataList ())
+    #expect (tokens.count == 2)
+    #expect (tokens[0] == SetToken.Or)
+    #expect (tokens[1] == SetToken.Or)
+}
+
 @Test func tokenizerTestAgentSample_1960_1970 () async throws {
     let tokenizer = SetTokenizer (input: "Agent | Sample | 1960-1970")
     let tokens = tokenizer.process (setTokenDataList: getSetTokenDataList ())
@@ -117,7 +132,7 @@ import Testing
     #expect (tokens[2] == SetToken.Or)
 }
 
-@Test func rpnTestAgentTrivial () async throws {
+@Test func rpnTestAgentOr1 () async throws {
     let tokenizer = SetTokenizer (input: "|")
     
     let rpnGenerator = RPNGenerator (tokens: tokenizer.process (setTokenDataList: getSetTokenDataList ()))
@@ -128,6 +143,35 @@ import Testing
     #expect (tokens[1] == SetToken.DummyOperand)
     #expect (tokens[2] == SetToken.Or)
 }
+
+@Test func rpnTestAgentOrj () async throws {
+    let tokenizer = SetTokenizer (input: "A | B | C")
+    
+    let rpnGenerator = RPNGenerator (tokens: tokenizer.process (setTokenDataList: getSetTokenDataList ()))
+    let tokens = rpnGenerator.process (setOperators: getSetOperators())
+    
+    #expect (tokens.count == 5)
+    #expect (tokens[0] == SetToken.AtomicOperand ("A"))
+    #expect (tokens[1] == SetToken.AtomicOperand ("B"))
+    #expect (tokens[2] == SetToken.Or)
+    #expect (tokens[3] == SetToken.AtomicOperand ("C"))
+    #expect (tokens[4] == SetToken.Or)
+}
+
+@Test func rpnTestAgentOr2 () async throws {
+    let tokenizer = SetTokenizer (input: "| |")
+    
+    let rpnGenerator = RPNGenerator (tokens: tokenizer.process (setTokenDataList: getSetTokenDataList ()))
+    let tokens = rpnGenerator.process (setOperators: getSetOperators())
+    
+    #expect (tokens.count == 5)
+    #expect (tokens[0] == SetToken.DummyOperand)
+    #expect (tokens[1] == SetToken.DummyOperand)
+    #expect (tokens[2] == SetToken.Or)
+    #expect (tokens[3] == SetToken.DummyOperand)
+    #expect (tokens[4] == SetToken.Or)
+}
+
 
 class SingleElement: SetElement {
     let value: String
@@ -190,12 +234,20 @@ class SingleElement: SetElement {
 
 @Test func setExpressionTestAgent7 () async throws {
     let stringElement = SingleElement (value: "Agent")
+    let processor = SetExpressionProcessor (inputExpression: " | | ")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == true)
+}
+
+
+@Test func setExpressionTestAgent8 () async throws {
+    let stringElement = SingleElement (value: "Agent")
     let processor = SetExpressionProcessor (inputExpression: "A & ")
     let result = try! processor.evaluate (setElement: stringElement)
     #expect (result == true)
 }
 
-@Test func setExpressionTestAgent8 () async throws {
+@Test func setExpressionTestAgent9 () async throws {
     let stringElement = SingleElement (value: "Agent")
     let processor = SetExpressionProcessor (inputExpression: "& A ")
     let result = try! processor.evaluate (setElement: stringElement)

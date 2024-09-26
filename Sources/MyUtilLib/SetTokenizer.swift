@@ -103,6 +103,10 @@ public enum SetToken : Equatable {
             return setElement.evaluateRangeOperand (from: value1, to: value2)
         case .DummyOperand:
             return .Inherit
+        case .True:
+            return .True
+        case .False:
+            return .False
         default:
             print ("Unexpected case for evaluate")
             return .False
