@@ -9,8 +9,8 @@
 import Foundation
 
 public protocol SetElement {
-    func evaluateAtomicOperand (operand: String) -> Bool
-    func evaluateRangeOperand (from: Int, to: Int) -> Bool
+    func evaluateAtomicOperand (operand: String) -> EvalResult
+    func evaluateRangeOperand (from: Int, to: Int) -> EvalResult
 }
 
 public class SetExpressionProcessor {
@@ -44,32 +44,62 @@ public class SetExpressionProcessor {
                 stack.push (token)
             } else { // token is an operator
                 // pop 2 operands from the stack
-                let rightOperand = stack.pop ()
-                let leftOperand = stack.pop ()
+                guard let rightOperand = stack.pop () else {
+                    print ("Right Operand is missng")
+                    return false
+                }
+                guard let leftOperand = stack.pop () else {
+                    print ("Left Operand is missing")
+                    return false
+                }
                 
                 // apply the operator to the operands
                 // push the result to the stack
                 switch token {
                 case .And:
-                    if !leftOperand!.evaluateOperand (setElement: setElement) {
+                    let leftEval = leftOperand.evaluateOperand (setElement: setElement)
+                    if leftEval == EvalResult.False {
                         stack.push (SetToken.False)
                     } else {
-                        let result = rightOperand!.evaluateOperand (setElement: setElement)
-                        stack.push (result ? SetToken.True: SetToken.False)
+                        let rightEval = rightOperand.evaluateOperand (setElement: setElement)
+                        switch rightEval {
+                        case .True:
+                            stack.push (SetToken.True)
+                        case . False:
+                            stack.push (SetToken.False)
+                        case .Inherit:
+                            stack.push (SetToken.True)
+                        }
                     }
                 case .Or:
-                    if leftOperand!.evaluateOperand (setElement: setElement) {
+                    let leftEval = leftOperand.evaluateOperand (setElement: setElement)
+                    if leftEval == EvalResult.True {
                         stack.push (SetToken.True)
                     } else {
-                        let result = rightOperand!.evaluateOperand(setElement: setElement)
-                        stack.push (result ? SetToken.True: SetToken.False)
+                        let rightEval = rightOperand.evaluateOperand (setElement: setElement)
+                        switch rightEval {
+                        case .True:
+                            stack.push (SetToken.True)
+                        case . False:
+                            stack.push (SetToken.False)
+                        case .Inherit:
+                            stack.push (leftEval == EvalResult.Inherit ? SetToken.True : SetToken.False)
+                        }
                     }
                 case .Diff:
-                    if !leftOperand!.evaluateOperand (setElement: setElement) {
+                    let leftEval = leftOperand.evaluateOperand (setElement: setElement)
+                    if leftEval == EvalResult.False {
                         stack.push (SetToken.False)
                     } else {
-                        let result = rightOperand!.evaluateOperand(setElement: setElement)
-                        stack.push (result ? SetToken.False: SetToken.True)
+                        let rightEval = rightOperand.evaluateOperand(setElement: setElement)
+                        switch rightEval {
+                        case .True:
+                            stack.push (SetToken.False)
+                        case . False:
+                            stack.push (SetToken.True)
+                        case .Inherit:
+                            stack.push (SetToken.True)
+                        }
                     }
                 default:
                     print ("Invalid Operator")
@@ -89,9 +119,9 @@ public class SetExpressionProcessor {
         case .False:
             return false
         case .AtomicOperand:
-            return result.evaluateOperand (setElement: setElement)
+            return result.evaluateOperand (setElement: setElement) == EvalResult.True
         case .RangeOperand:
-            return result.evaluateOperand (setElement: setElement)
+            return result.evaluateOperand (setElement: setElement) == EvalResult.True
         default:
             print ("Unexpected token on stack")
             return false

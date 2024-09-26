@@ -14,6 +14,7 @@ struct Stack<T> {
         elements.append(item)
     }
     
+    @discardableResult
     mutating func pop () -> T? {
         guard !elements.isEmpty else {
             return nil

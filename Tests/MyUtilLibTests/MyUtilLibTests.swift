@@ -54,7 +54,7 @@ import Testing
     #expect (tokens[1] == SetToken.Or)
     #expect (tokens[2] == SetToken.AtomicOperand ("Sample"))
     #expect (tokens[3] == SetToken.Or)
-    #expect (tokens[4] == SetToken.RangeOperand (1960,1970))
+    #expect (tokens[4] == SetToken.RangeOperand (1960, 1970))
 }
 
 @Test func rpnTestSample () async throws {
@@ -93,39 +93,160 @@ import Testing
     #expect (tokens[4] == SetToken.And)
 }
 
-class StringElement: SetElement {
+@Test func rpnTestAgentA1 () async throws {
+    let tokenizer = SetTokenizer (input: "A | ")
+    
+    let rpnGenerator = RPNGenerator (tokens: tokenizer.process (setTokenDataList: getSetTokenDataList ()))
+    let tokens = rpnGenerator.process (setOperators: getSetOperators())
+    
+    #expect (tokens.count == 3)
+    #expect (tokens[0] == SetToken.AtomicOperand ("A"))
+    #expect (tokens[1] == SetToken.DummyOperand)
+    #expect (tokens[2] == SetToken.Or)
+}
+
+@Test func rpnTestAgentA2 () async throws {
+    let tokenizer = SetTokenizer (input: "| A ")
+    
+    let rpnGenerator = RPNGenerator (tokens: tokenizer.process (setTokenDataList: getSetTokenDataList ()))
+    let tokens = rpnGenerator.process (setOperators: getSetOperators())
+    
+    #expect (tokens.count == 3)
+    #expect (tokens[0] == SetToken.DummyOperand)
+    #expect (tokens[1] == SetToken.AtomicOperand ("A"))
+    #expect (tokens[2] == SetToken.Or)
+}
+
+@Test func rpnTestAgentTrivial () async throws {
+    let tokenizer = SetTokenizer (input: "|")
+    
+    let rpnGenerator = RPNGenerator (tokens: tokenizer.process (setTokenDataList: getSetTokenDataList ()))
+    let tokens = rpnGenerator.process (setOperators: getSetOperators())
+    
+    #expect (tokens.count == 3)
+    #expect (tokens[0] == SetToken.DummyOperand)
+    #expect (tokens[1] == SetToken.DummyOperand)
+    #expect (tokens[2] == SetToken.Or)
+}
+
+class SingleElement: SetElement {
     let value: String
     
     init (value: String) {
         self.value = value
     }
     
-    func evaluateAtomicOperand(operand: String) -> Bool {
-        return value.localizedCaseInsensitiveContains (operand)
+    func evaluateAtomicOperand(operand: String) -> EvalResult {
+        return value.localizedCaseInsensitiveContains (operand) ? EvalResult.True : EvalResult.False
     }
     
-    func evaluateRangeOperand(from: Int, to: Int) -> Bool {
-        return false
+    func evaluateRangeOperand(from: Int, to: Int) -> EvalResult {
+        guard let intValue = Int (value) else { return EvalResult.False }
+        return intValue >= from && intValue <= to ? EvalResult.True : EvalResult.False
     }
 }
 
 @Test func setExpressionTestAgent1 () async throws {
-    let stringElement = StringElement (value: "Agent")
+    let stringElement = SingleElement (value: "Agent")
     let processor = SetExpressionProcessor (inputExpression: "")
     let result = try! processor.evaluate (setElement: stringElement)
     #expect (result == true)
 }
 
 @Test func setExpressionTestAgent2 () async throws {
-    let stringElement = StringElement (value: "Agent")
+    let stringElement = SingleElement (value: "Agent")
     let processor = SetExpressionProcessor (inputExpression: "A ~ B")
     let result = try! processor.evaluate (setElement: stringElement)
     #expect (result == true)
 }
 
 @Test func setExpressionTestAgent3 () async throws {
-    let stringElement = StringElement (value: "Agent")
+    let stringElement = SingleElement (value: "Agent")
     let processor = SetExpressionProcessor (inputExpression: "A")
     let result = try! processor.evaluate (setElement: stringElement)
     #expect (result == true)
+}
+
+@Test func setExpressionTestAgent4 () async throws {
+    let stringElement = SingleElement (value: "Agent")
+    let processor = SetExpressionProcessor (inputExpression: "A |")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == true)
+}
+
+@Test func setExpressionTestAgent5 () async throws {
+    let stringElement = SingleElement (value: "Agent")
+    let processor = SetExpressionProcessor (inputExpression: " | A")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == true)
+}
+
+@Test func setExpressionTestAgent6 () async throws {
+    let stringElement = SingleElement (value: "Agent")
+    let processor = SetExpressionProcessor (inputExpression: " | ")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == true)
+}
+
+@Test func setExpressionTestAgent7 () async throws {
+    let stringElement = SingleElement (value: "Agent")
+    let processor = SetExpressionProcessor (inputExpression: "A & ")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == true)
+}
+
+@Test func setExpressionTestAgent8 () async throws {
+    let stringElement = SingleElement (value: "Agent")
+    let processor = SetExpressionProcessor (inputExpression: "& A ")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == true)
+}
+
+@Test func setExpressionTest1970_1 () async throws {
+    let stringElement = SingleElement (value: "1970")
+    let processor = SetExpressionProcessor (inputExpression: "1965-1975")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == true)
+}
+
+@Test func setExpressionTest1970_2 () async throws {
+    let stringElement = SingleElement (value: "1970")
+    let processor = SetExpressionProcessor (inputExpression: "1971-1975")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == false)
+}
+
+@Test func setExpressionTest1970_3 () async throws {
+    let stringElement = SingleElement (value: "1970")
+    let processor = SetExpressionProcessor (inputExpression: "1975")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == false)
+}
+
+@Test func setExpressionTest1970_4 () async throws {
+    let stringElement = SingleElement (value: "1970")
+    let processor = SetExpressionProcessor (inputExpression: "197")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == true)
+}
+
+@Test func setExpressionTest1970_5 () async throws {
+    let stringElement = SingleElement (value: "1970")
+    let processor = SetExpressionProcessor (inputExpression: "1960-")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == true)
+}
+
+@Test func setExpressionTest1970_6 () async throws {
+    let stringElement = SingleElement (value: "1970")
+    let processor = SetExpressionProcessor (inputExpression: "1970-")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == true)
+}
+
+@Test func setExpressionTest1970_7 () async throws {
+    let stringElement = SingleElement (value: "1970")
+    let processor = SetExpressionProcessor (inputExpression: "1971-")
+    let result = try! processor.evaluate (setElement: stringElement)
+    #expect (result == false)
 }

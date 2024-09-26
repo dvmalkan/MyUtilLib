@@ -12,13 +12,38 @@ import Foundation
 class RPNGenerator {
     let tokens: [SetToken]
     
+    private var numOperands = 0
+    private var numOperators = 0
+    private var output = [SetToken] ()
+    private var stack = Stack<SetToken>()
+
     init (tokens: [SetToken]) {
         self.tokens = tokens
     }
     
+    private func addOperatorToOutput (op: SetToken) {
+        while (numOperands < numOperators + 2) {
+            output.append (SetToken.DummyOperand)
+            numOperands += 1
+        }
+        output.append (op)
+        numOperators += 1
+    }
+
+    private func addOperatorToStack (op: SetToken) {
+        while (numOperands < numOperators + 1) {
+            output.append (SetToken.DummyOperand)
+            numOperands += 1
+        }
+        stack.push (op)
+    }
+
     func process (setOperators: [SetOperator]) -> [SetToken] {
-        var output = [SetToken] ()
-        var stack = Stack<SetToken>()
+        
+        output = [SetToken] ()
+        stack = Stack<SetToken>()
+        numOperands = 0
+        numOperators = 0
         
         for token in tokens {
             if token.isOperator () {
@@ -40,24 +65,25 @@ class RPNGenerator {
                     }
                     
                     if  (currentOperator.precedence <= topOperator.precedence && currentOperator.associativity == .left) ||
-                        (currentOperator.precedence < topOperator.precedence && currentOperator.associativity == .right)
-                    {
-                        // pop it to the output
-                        output.append (stack.pop ()!)
-                        continue
+                        (currentOperator.precedence < topOperator.precedence && currentOperator.associativity == .right) {
+                        // pop topOperator to the output
+                        addOperatorToOutput (op: stack.pop ()!)
+                    } else {
+                        break
                     }
-                    break
                 }
-                // push the new operator to the stack
-                stack.push (token)
-            } else if token == SetToken.ParensOpen {
-                stack.push(token)
-            } else if token == SetToken.ParensClose {
                 
-                // while the top token (from the stack) is open parenthesis
+                // push the new operator to the stack
+                addOperatorToStack(op: token)
+                
+            } else if token == SetToken.ParensOpen {
+                stack.push (token)
+                
+            } else if token == SetToken.ParensClose {
+                // while the top token (from the stack) is not open parenthesis
                 while !stack.isEmpty && !(stack.peek() == SetToken.ParensOpen) {
                     // pop from the stack to the output
-                    output.append (stack.pop ()!)
+                    addOperatorToOutput (op: stack.pop ()!)
                 }
                 
                 // if the stack runs out, than there are mismatched parentheses.
@@ -69,16 +95,20 @@ class RPNGenerator {
                 
                 // pop the open parenthesis but don't include it in the output
                 stack.pop ()
+                
             } else {
-                // token is not an operator or function, add it to the output
+                // token is a operand. Add it to the output
                 output.append (token)
+                numOperands += 1
             }
         }
         
         // while there are still operator tokens in the stack, pop them to output
         while !stack.isEmpty {
-            output.append (stack.pop ()!)
+            addOperatorToOutput (op: stack.pop ()!)
         }
+        
+        print ("numOperators = \(numOperators), numOperands = \(numOperands)")
         
         return output
     }

@@ -9,11 +9,17 @@
 
 import Foundation
 
+public enum EvalResult {
+    case True
+    case False
+    case Inherit
+}
 
 /// An enum that lists all the basic tokens of a set expression. A token maybe an operand or an operator.
 /// An operand represents a filter. A set element either passes the filter, or does not.
 /// The basic operators of a set expression are - And, Or & Diff. In addition, a set expression may consist of the ParensOpen and ParensClose tokens.
 /// The True and False tokens are used by the SetExpressionProcessor to store the result of an evaluated 'set operation' on its stack
+/// The DummyOperand token is used by the RPNGenerator to store a missing Operand.
 public enum SetToken : Equatable {
     case AtomicOperand(String)
     case RangeOperand(Int,Int)
@@ -24,6 +30,7 @@ public enum SetToken : Equatable {
     case Diff
     case True
     case False
+    case DummyOperand
     case Other(String)
     
     func toString () -> String {
@@ -46,6 +53,8 @@ public enum SetToken : Equatable {
             return "True"
         case .False:
             return "False"
+        case .DummyOperand:
+            return "DummyOperand"
         case let .Other(value):
             return value
         }
@@ -56,6 +65,8 @@ public enum SetToken : Equatable {
         case .AtomicOperand:
             return true
         case .RangeOperand:
+            return true
+        case .DummyOperand:
             return true
         default:
             return false
@@ -84,15 +95,17 @@ public enum SetToken : Equatable {
         return nil
     }
     
-    func evaluateOperand (setElement: SetElement) -> Bool {
+    func evaluateOperand (setElement: SetElement) -> EvalResult {
         switch self {
         case let .AtomicOperand(value):
             return setElement.evaluateAtomicOperand (operand: value)
         case let .RangeOperand(value1, value2):
             return setElement.evaluateRangeOperand (from: value1, to: value2)
+        case .DummyOperand:
+            return .Inherit
         default:
             print ("Unexpected case for evaluate")
-            return false
+            return .False
         }
     }
 }
@@ -115,13 +128,13 @@ class SetTokenData {
 func getSetTokenDataList () -> [SetTokenData] {
     return [
         SetTokenData (pattern: "[ \t\n]", tokenGenerator: { _ in nil }),
-        SetTokenData (pattern: "[0-9]+[ ]*\\-[ ]*[0-9]+", tokenGenerator: {
+        SetTokenData (pattern: "[0-9]+[ ]*\\-[ ]*[0-9]*", tokenGenerator: {
             let numberTokens = $0.split (separator: "-", omittingEmptySubsequences: true)
-            let number1 = Int (numberTokens[0]) ?? 0
-            let number2 = Int (numberTokens[1]) ?? 0
+            let number1 = Int (numberTokens[0].description.removeCharacters(from: " ")) ?? Int.min
+            let number2 = numberTokens.count >= 2 ? Int (numberTokens[1].description.removeCharacters(from: " ")) ?? Int.max : Int.max
             return .RangeOperand (number1, number2)
         }),
-        SetTokenData (pattern: "[a-zA-Z][a-zA-Z0-9]*", tokenGenerator: { .AtomicOperand ($0) }),
+        SetTokenData (pattern: "[a-zA-Z0-9]+", tokenGenerator: { .AtomicOperand ($0) }),
         SetTokenData (pattern: SetSymbol.PARANSOPEN.toStringForRegex (), tokenGenerator: { _ in .ParensOpen }),
         SetTokenData (pattern: SetSymbol.PARANSCLOSE.toStringForRegex (), tokenGenerator: { _ in .ParensClose }),
         SetTokenData (pattern: SetSymbol.AND.toStringForRegex (), tokenGenerator: { _ in .And }),
