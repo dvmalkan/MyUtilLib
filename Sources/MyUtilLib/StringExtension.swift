@@ -9,6 +9,11 @@ import Foundation
 /// An extension to String
 public extension String {
 
+    // Adapted from https://stackoverflow.com/questions/70118711/subscript-is-unavailable-cannot-subscript-string-with-an-int-use-a-strin
+    subscript(_ idx: Int) -> Character {
+        self[self.index (self.startIndex, offsetBy: idx)]
+        }
+    
     // Adapted from https://stackoverflow.com/questions/32339717/how-to-remove-characters-from-a-string-in-swift
     func removeCharacters (from forbiddenChars: CharacterSet) -> String {
         let passed = self.unicodeScalars.filter { !forbiddenChars.contains($0) }

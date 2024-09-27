@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum SetSymbol: Character {
+enum SetOperatorSymbol: Character {
     case PARANSOPEN = "("
     case PARANSCLOSE = ")"
     case AND = "&"
@@ -29,11 +29,11 @@ enum Associativity {
 }
 
 struct SetOperator {
-    let symbol: SetSymbol
+    let symbol: SetOperatorSymbol
     let precedence: Int
     let associativity: Associativity
     
-    init (symbol: SetSymbol, precedence: Int, associativity: Associativity) {
+    init (symbol: SetOperatorSymbol, precedence: Int, associativity: Associativity) {
         self.symbol = symbol
         self.precedence = precedence
         self.associativity = associativity
@@ -44,11 +44,12 @@ struct SetOperator {
     }
 }
 
+/// Returns a SetOperator array. Its a simple loose coupling, on the premise that it gives the ability to process a different such array. For now there is only one SetOperator array.
 func getSetOperators () -> [SetOperator] {
     return [
-        SetOperator (symbol: SetSymbol.AND, precedence: 0, associativity: .left),
-        SetOperator (symbol: SetSymbol.OR, precedence: 0, associativity: .left),
-        SetOperator (symbol: SetSymbol.DIFF, precedence: 0, associativity: .left),
+        SetOperator (symbol: SetOperatorSymbol.AND, precedence: 0, associativity: .left),
+        SetOperator (symbol: SetOperatorSymbol.OR, precedence: 0, associativity: .left),
+        SetOperator (symbol: SetOperatorSymbol.DIFF, precedence: 0, associativity: .left),
     ]
 }
 

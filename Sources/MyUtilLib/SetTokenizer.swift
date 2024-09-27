@@ -23,6 +23,7 @@ public enum EvalResult {
 public enum SetToken : Equatable {
     case AtomicOperand(String)
     case RangeOperand(Int,Int)
+    case PropertyAtomicOperand(String,String)
     case ParensOpen
     case ParensClose
     case And
@@ -39,16 +40,18 @@ public enum SetToken : Equatable {
             return value
         case let .RangeOperand(value1, value2):
             return "\(value1)-\(value2)"
+        case let .PropertyAtomicOperand(value1, value2):
+            return "\(value1):\(value2)"
         case .ParensOpen:
-            return SetSymbol.PARANSOPEN.toString ()
+            return SetOperatorSymbol.PARANSOPEN.toString ()
         case .ParensClose:
-            return SetSymbol.PARANSCLOSE.toString ()
+            return SetOperatorSymbol.PARANSCLOSE.toString ()
         case .And:
-            return SetSymbol.AND.toString ()
+            return SetOperatorSymbol.AND.toString ()
         case .Or:
-            return SetSymbol.OR.toString ()
+            return SetOperatorSymbol.OR.toString ()
         case .Diff:
-            return SetSymbol.DIFF.toString ()
+            return SetOperatorSymbol.DIFF.toString ()
         case .True:
             return "True"
         case .False:
@@ -66,22 +69,54 @@ public enum SetToken : Equatable {
             return true
         case .RangeOperand:
             return true
+        case.PropertyAtomicOperand:
+            return true
         case .DummyOperand:
             return true
-        default:
+        case .ParensOpen:
+            return false
+        case .ParensClose:
+            return false
+        case .And:
+            return false
+        case .Or:
+            return false
+        case .Diff:
+            return false
+        case .True:
+            return false
+        case .False:
+            return false
+        case .Other:
             return false
         }
     }
         
     func isOperator () -> Bool {
         switch self {
+        case .AtomicOperand:
+            return false
+        case .RangeOperand:
+            return false
+        case.PropertyAtomicOperand:
+            return false
+        case .DummyOperand:
+            return false
+        case .ParensOpen:
+            return false
+        case .ParensClose:
+            return false
         case .And:
             return true
         case .Or:
             return true
         case .Diff:
             return true
-        default:
+        case .True:
+            return false
+        case .False:
+            return false
+        case .Other:
             return false
         }
     }
@@ -101,6 +136,8 @@ public enum SetToken : Equatable {
             return setElement.evaluateAtomicOperand (operand: value)
         case let .RangeOperand(value1, value2):
             return setElement.evaluateRangeOperand (from: value1, to: value2)
+        case let .PropertyAtomicOperand(value1, value2):
+            return setElement.evaluatePropertyAtomicOperand (property: value1, value: value2)
         case .DummyOperand:
             return .Inherit
         case .True:
@@ -114,6 +151,9 @@ public enum SetToken : Equatable {
     }
 }
 
+/// A SetTokenData instance describes a pattern that to be recognized, at the top of a given string.
+/// If the pattern is recognized, then the "SetTokenGenerator" is applied on the string to generate a "SetToken"
+///  "regex" is simply a cached expression associated with the pattern. "regex" is generated from "pattern" in the "init" function. A input string is matched against regex.
 typealias SetTokenGenerator = (String) -> SetToken?
 class SetTokenData {
     let pattern: String
@@ -129,24 +169,45 @@ class SetTokenData {
     }
 }
 
+/// Returns a SetTokenData array. Its a simple loose coupling, on the premise that it gives the ability to process a different such array. For now there is only one SetTokenData array.
+/// Note the dependency on SetOperatorSymbol, from where the actual set-operator charactoers are sourced.
 func getSetTokenDataList () -> [SetTokenData] {
     return [
         SetTokenData (pattern: "[ \t\n]", tokenGenerator: { _ in nil }),
-        SetTokenData (pattern: "[0-9]+[ ]*\\-[ ]*[0-9]*", tokenGenerator: {
-            let numberTokens = $0.split (separator: "-", omittingEmptySubsequences: true)
-            let number1 = Int (numberTokens[0].description.removeCharacters(from: " ")) ?? Int.min
-            let number2 = numberTokens.count >= 2 ? Int (numberTokens[1].description.removeCharacters(from: " ")) ?? Int.max : Int.max
+        SetTokenData (pattern: "[0-9]*[ ]*\\-[ ]*[0-9]*", tokenGenerator: {
+            let rangeString = $0.removeCharacters(from: " ")
+            let numberTokens = rangeString.split (separator: "-", omittingEmptySubsequences: true)
+            var number1 = Int.min
+            var number2 = Int.max
+            if numberTokens.count >= 2 {
+                number1 = Int (numberTokens[0].description.removeCharacters (from: " ")) ?? Int.min
+                number2 = Int (numberTokens[1].description.removeCharacters(from: " ")) ?? Int.max
+            }
+            else if numberTokens.count == 1 {
+                if rangeString[0] == "-" {
+                    number2 = Int (numberTokens[0].description.removeCharacters(from: " ")) ?? Int.max
+                } else if rangeString[rangeString.count - 1] == "-" {
+                    number1 = Int (numberTokens[0].description.removeCharacters(from: " ")) ?? Int.min
+                }
+            }
             return .RangeOperand (number1, number2)
         }),
+        SetTokenData (pattern: "[a-zA-Z0-9]+:[a-zA-Z0-9]*", tokenGenerator: {
+            let propertyTokens = $0.split (separator: ":", omittingEmptySubsequences: true)
+            let propertyName = propertyTokens[0]
+            let propertyValue = propertyTokens.count >= 2 ? propertyTokens[1] : ""
+            return .PropertyAtomicOperand (String (propertyName), String (propertyValue))
+        }),
         SetTokenData (pattern: "[a-zA-Z0-9]+", tokenGenerator: { .AtomicOperand ($0) }),
-        SetTokenData (pattern: SetSymbol.PARANSOPEN.toStringForRegex (), tokenGenerator: { _ in .ParensOpen }),
-        SetTokenData (pattern: SetSymbol.PARANSCLOSE.toStringForRegex (), tokenGenerator: { _ in .ParensClose }),
-        SetTokenData (pattern: SetSymbol.AND.toStringForRegex (), tokenGenerator: { _ in .And }),
-        SetTokenData (pattern: SetSymbol.OR.toStringForRegex (), tokenGenerator: { _ in .Or }),
-        SetTokenData (pattern: SetSymbol.DIFF.toStringForRegex (), tokenGenerator: { _ in .Diff }),
+        SetTokenData (pattern: SetOperatorSymbol.PARANSOPEN.toStringForRegex (), tokenGenerator: { _ in .ParensOpen }),
+        SetTokenData (pattern: SetOperatorSymbol.PARANSCLOSE.toStringForRegex (), tokenGenerator: { _ in .ParensClose }),
+        SetTokenData (pattern: SetOperatorSymbol.AND.toStringForRegex (), tokenGenerator: { _ in .And }),
+        SetTokenData (pattern: SetOperatorSymbol.OR.toStringForRegex (), tokenGenerator: { _ in .Or }),
+        SetTokenData (pattern: SetOperatorSymbol.DIFF.toStringForRegex (), tokenGenerator: { _ in .Diff }),
     ]
 }
 
+/// The SetTokenizer processes an "input" string and generates a "SetToken" array.
 class SetTokenizer {
     let input: String
     

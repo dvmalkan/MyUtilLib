@@ -8,9 +8,14 @@
 
 import Foundation
 
+/// A SetExpressionProcessor takes an input expression string and processes it to evaluate a SetElement.
+/// The result of the evaluation is a Bool. True means that the SetElement passes the input expression. False means that it does not.
+/// The SetElement is a protocol that consists of a set of functions implemented by the caller.
+
 public protocol SetElement {
     func evaluateAtomicOperand (operand: String) -> EvalResult
     func evaluateRangeOperand (from: Int, to: Int) -> EvalResult
+    func evaluatePropertyAtomicOperand (property: String, value: String) -> EvalResult
 }
 
 public class SetExpressionProcessor {
@@ -91,7 +96,7 @@ public class SetExpressionProcessor {
                     if leftEval == EvalResult.False {
                         stack.push (SetToken.False)
                     } else {
-                        let rightEval = rightOperand.evaluateOperand(setElement: setElement)
+                        let rightEval = rightOperand.evaluateOperand (setElement: setElement)
                         switch rightEval {
                         case .True:
                             stack.push (SetToken.False)
@@ -121,6 +126,8 @@ public class SetExpressionProcessor {
         case .AtomicOperand:
             return result.evaluateOperand (setElement: setElement) == EvalResult.True
         case .RangeOperand:
+            return result.evaluateOperand (setElement: setElement) == EvalResult.True
+        case .PropertyAtomicOperand:
             return result.evaluateOperand (setElement: setElement) == EvalResult.True
         default:
             print ("Unexpected token on stack")
