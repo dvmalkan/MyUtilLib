@@ -118,7 +118,7 @@ class RPNGenerator {
         
         // fill-up with '|' (OR) operator tokens as required
         while numOperands > numOperators + 1 {
-            addOperatorToOutput(oprtr: SetToken.Or)
+            addOperatorToOutput(oprtr: SetToken.And)
         }
         
         return output
