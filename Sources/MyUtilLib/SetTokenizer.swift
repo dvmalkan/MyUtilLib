@@ -10,9 +10,20 @@
 import Foundation
 
 public enum EvalResult {
-    case True
+    case True(String)
     case False
     case Inherit
+    
+    func isTrue () -> Bool {
+        switch self {
+        case .True:
+            return true
+        case .False:
+            return false
+        case .Inherit:
+            return false
+        }
+    }
 }
 
 /// An enum that lists all the basic tokens of a set expression. A token maybe an operand or an operator.
@@ -29,7 +40,7 @@ public enum SetToken : Equatable {
     case And
     case Or
     case Diff
-    case True
+    case True(String)
     case False
     case DummyOperand
     case Other(String)
@@ -52,8 +63,8 @@ public enum SetToken : Equatable {
             return SetOperatorSymbol.OR.toString ()
         case .Diff:
             return SetOperatorSymbol.DIFF.toString ()
-        case .True:
-            return "True"
+        case let .True(value):
+            return "True \(value)"
         case .False:
             return "False"
         case .DummyOperand:
@@ -140,10 +151,10 @@ public enum SetToken : Equatable {
             return setElement.evaluatePropertyAtomicOperand (property: value1, value: value2)
         case .DummyOperand:
             return .Inherit
-        case .True:
-            return .True
+        case let .True(value):
+            return EvalResult.True(value)
         case .False:
-            return .False
+            return EvalResult.False
         default:
             print ("Unexpected case for evaluate")
             return .False

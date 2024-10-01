@@ -33,10 +33,22 @@ public class SetExpressionProcessor {
         rpnTokens = rpnGenerator.process (setOperators: setOperators)
     }
     
-    public func evaluate (setElement: SetElement) throws -> Bool {
+    private func returnResultForEvalResult (evalResult: EvalResult) -> (Bool, String) {
+        switch evalResult {
+        case let .True(value):
+            return (true, value)
+        default:
+            return (false, "")
+        }
+    }
+
+    /// Evaluates the instance of an object that implements "setElement against "inputExpression".
+    /// The result is a Bool that represents if the "setElement" passed the "inputExpression"
+    /// The return "String" can contain a message that gives some details on how the "setElement" passed the "inputExpression".
+    public func evaluate (setElement: SetElement) throws -> (Bool, String?) {
         // first handle trivial case.
         if rpnTokens.count <= 0 {
-            return true
+            return (true, "No Tokens")
         }
         // initialize the stack
         var stack = Stack<SetToken>()
@@ -50,12 +62,10 @@ public class SetExpressionProcessor {
             } else { // token is an operator
                 // pop 2 operands from the stack
                 guard let rightOperand = stack.pop () else {
-                    print ("Right Operand is missng")
-                    return false
+                    return (false, "Right Operand is missing")
                 }
                 guard let leftOperand = stack.pop () else {
-                    print ("Left Operand is missing")
-                    return false
+                    return (false, "Left Operand is missing")
                 }
                 
                 // apply the operator to the operands
@@ -63,47 +73,68 @@ public class SetExpressionProcessor {
                 switch token {
                 case .And:
                     let leftEval = leftOperand.evaluateOperand (setElement: setElement)
-                    if leftEval == EvalResult.False {
+                    var leftValue = ""
+                    switch leftEval {
+                    case EvalResult.False:
                         stack.push (SetToken.False)
-                    } else {
+                    case let EvalResult.True (value):
+                        leftValue = value
+                        fallthrough
+                    case EvalResult.Inherit:
                         let rightEval = rightOperand.evaluateOperand (setElement: setElement)
                         switch rightEval {
-                        case .True:
-                            stack.push (SetToken.True)
-                        case . False:
+                        case let .True(rightValue):
+                            let valueString =  "\(leftValue) + \(rightValue)"
+                            stack.push (SetToken.True (valueString))
+                        case .False:
                             stack.push (SetToken.False)
                         case .Inherit:
-                            stack.push (SetToken.True)
+                            stack.push (SetToken.True("Inheit"))
                         }
                     }
                 case .Or:
                     let leftEval = leftOperand.evaluateOperand (setElement: setElement)
-                    if leftEval == EvalResult.True {
-                        stack.push (SetToken.True)
-                    } else {
+                    switch leftEval {
+                    case let EvalResult.True(value):
+                        stack.push (SetToken.True(value))
+                    case EvalResult.False:
+                        fallthrough
+                    case EvalResult.Inherit:
                         let rightEval = rightOperand.evaluateOperand (setElement: setElement)
                         switch rightEval {
-                        case .True:
-                            stack.push (SetToken.True)
+                        case let .True(value):
+                            stack.push (SetToken.True(value))
                         case . False:
                             stack.push (SetToken.False)
                         case .Inherit:
-                            stack.push (leftEval == EvalResult.Inherit ? SetToken.True : SetToken.False)
+                            switch leftEval {
+                            case EvalResult.Inherit:
+                                stack.push (SetToken.True("Inherit"))
+                            case EvalResult.True:
+                                fallthrough
+                            case EvalResult.False:
+                                stack.push (SetToken.False)
+                            }
                         }
                     }
                 case .Diff:
                     let leftEval = leftOperand.evaluateOperand (setElement: setElement)
-                    if leftEval == EvalResult.False {
+                    var leftValue = ""
+                    switch leftEval {
+                    case EvalResult.False:
                         stack.push (SetToken.False)
-                    } else {
+                    case let EvalResult.True(value):
+                        leftValue = value
+                        fallthrough
+                    case EvalResult.Inherit:
                         let rightEval = rightOperand.evaluateOperand (setElement: setElement)
                         switch rightEval {
                         case .True:
                             stack.push (SetToken.False)
                         case . False:
-                            stack.push (SetToken.True)
+                            stack.push (SetToken.True(leftValue))
                         case .Inherit:
-                            stack.push (SetToken.True)
+                            stack.push (SetToken.True(leftValue))
                         }
                     }
                 default:
@@ -114,24 +145,23 @@ public class SetExpressionProcessor {
 
         // pop the remaining value from the stack
         guard let result = stack.pop () else {
-            print ("Unexpected empty stack")
-            return false
+            return (false, "Unexpected empty stack")
         }
         
         switch result {
-        case .True:
-            return true
+        case let .True(value):
+            return (true, value)
         case .False:
-            return false
+            return (false, nil)
         case .AtomicOperand:
-            return result.evaluateOperand (setElement: setElement) == EvalResult.True
+            fallthrough
         case .RangeOperand:
-            return result.evaluateOperand (setElement: setElement) == EvalResult.True
+            fallthrough
         case .PropertyAtomicOperand:
-            return result.evaluateOperand (setElement: setElement) == EvalResult.True
+            let evalResult = result.evaluateOperand (setElement: setElement)
+            return returnResultForEvalResult (evalResult: evalResult)
         default:
-            print ("Unexpected token on stack")
-            return false
+            return (false, "Unexpected token on stack")
         }
     }
 }
