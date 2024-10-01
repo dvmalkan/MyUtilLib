@@ -181,6 +181,7 @@ class SetTokenData {
 }
 
 /// Returns a SetTokenData array. Its a simple loose coupling, on the premise that it gives the ability to process a different such array. For now there is only one SetTokenData array.
+///  Will be useful for version management.
 /// Note the dependency on SetOperatorSymbol, from where the actual set-operator charactoers are sourced.
 func getSetTokenDataList () -> [SetTokenData] {
     return [
