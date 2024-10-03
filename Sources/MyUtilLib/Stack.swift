@@ -8,7 +8,7 @@
 // A simple implementation of a stack as an array of elements of specified type <T>
 // Adapted from https://benoitpasquier.com/data-structure-implement-stack-swift/
 public struct Stack<T> {
-    fileprivate var elements: [T] = []
+    public var elements: [T] = []
     
     public init () { }
     

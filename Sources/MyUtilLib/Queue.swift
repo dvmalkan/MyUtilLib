@@ -8,19 +8,20 @@
 // A simple implementation of a queue as an array of elements of specified type <T>
 // Adapted from https://benoitpasquier.com/data-structure-implement-queue-swift/
 public struct Queue<T> {
-    private var elements: [T] = []
+    public var elements: [T] = []
     
     public init () { }
     
-    public mutating func enqueue(_ value: T) {
+    public mutating func enqueue (_ value: T) {
         elements.append(value)
     }
     
-    public mutating func dequeue() -> T? {
+    @discardableResult
+    public mutating func dequeue () -> T? {
         guard !elements.isEmpty else {
             return nil
         }
-        return elements.removeFirst()
+        return elements.removeFirst ()
     }
     
     public var head: T? {

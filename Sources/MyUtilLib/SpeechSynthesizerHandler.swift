@@ -9,6 +9,7 @@ import Foundation
 import AVKit
 
 /// Thin wrapper over AVSpeechSynthesizer
+@available(macOS 10.14, *)
 public struct SpeechSynthesizerHandler {
     private let speechSynthesizer = AVSpeechSynthesizer ()
     
