@@ -7,6 +7,7 @@
 /// Given a string, generate an array of defined tokens.
 /// Adapted from http://blog.matthewcheok.com/writing-a-lexer-in-swift/
 
+/*
 import Foundation
 
 public enum EvalResult {
@@ -260,3 +261,5 @@ class SetTokenizer {
         return tokens
     }
 }
+
+*/

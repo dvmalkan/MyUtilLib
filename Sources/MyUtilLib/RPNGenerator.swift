@@ -6,6 +6,7 @@
 //
 /// Adapted from https://medium.com/mobilepeople/evaluating-math-expressions-with-swift-part-1-cb528ce953a5
 
+/*
 import Foundation
 
 /// RPNGenerator processes a SetToken Array (that represents an in-fix expression) into a Reverse Polish Normal (RPN) post-fix expression.
@@ -125,3 +126,4 @@ class RPNGenerator {
     }
 }
 
+*/

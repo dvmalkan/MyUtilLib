@@ -7,15 +7,17 @@
 
 // A simple implementation of a stack as an array of elements of specified type <T>
 // Adapted from https://benoitpasquier.com/data-structure-implement-stack-swift/
-struct Stack<T> {
+public struct Stack<T> {
     fileprivate var elements: [T] = []
     
-    mutating func push(_ item: T) {
+    public init () { }
+    
+    public mutating func push(_ item: T) {
         elements.append(item)
     }
     
     @discardableResult
-    mutating func pop () -> T? {
+    public mutating func pop () -> T? {
         guard !elements.isEmpty else {
             return nil
         }
@@ -23,9 +25,9 @@ struct Stack<T> {
         return elements.popLast()
     }
     
-    func peek () -> T? {
+    public func peek () -> T? {
         return elements.last
     }
     
-    var isEmpty: Bool { elements.isEmpty }
+    public var isEmpty: Bool { elements.isEmpty }
 }
