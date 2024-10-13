@@ -7,17 +7,20 @@
 
 public extension Dictionary where Key == String {
 
+    // Adapted from https://stackoverflow.com/questions/33182260/case-insensitive-dictionary-in-swift
     subscript(caseInsensitive key: Key) -> Value? {
         get {
-            if let k = keys.first(where: { $0.caseInsensitiveCompare(key) == .orderedSame }) {
-                return self[k]
+            if let firstMatch = keys.first (where: { $0.caseInsensitiveCompare(key) == .orderedSame }) {
+                return self[firstMatch]
             }
             return nil
         }
         set {
-            if let k = keys.first(where: { $0.caseInsensitiveCompare(key) == .orderedSame }) {
-                self[k] = newValue
+            if let firstMatch = keys.first (where: { $0.caseInsensitiveCompare(key) == .orderedSame }) {
+                // Update "newValue" at "firstMatch"
+                self[firstMatch] = newValue
             } else {
+                // If no match, then add "newValue" with "key"
                 self[key] = newValue
             }
         }
