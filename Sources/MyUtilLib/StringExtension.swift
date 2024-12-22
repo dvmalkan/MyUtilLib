@@ -40,4 +40,13 @@ public extension String {
         
         return (self as NSString).substring (with: range)
     }
+    
+    // Compare self with 'matchString'. Assumption is that self has space character which need to be ignored. 'matchString' is assumed
+    // to not have any space character.
+    public func matchIgnoreSpace (matchString: String) -> Bool {
+        let hasSpaces = self.contains (" ")
+        var noSpaceString = hasSpaces ? self.removeCharacters(from: " ") : self
+        
+        return noSpaceString.localizedCaseInsensitiveContains (matchString)
+    }
 }
