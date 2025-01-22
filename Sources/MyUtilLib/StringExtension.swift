@@ -6,6 +6,13 @@
 //
 import Foundation
 
+public enum StringMatch {
+    case exactMatch
+    case wordMatch
+    case partialMatch
+    case noMatch
+}
+
 /// An extension to String
 public extension String {
 
@@ -41,12 +48,55 @@ public extension String {
         return (self as NSString).substring (with: range)
     }
     
-    // Compare self with 'matchString'. Assumption is that self has space character which need to be ignored. 'matchString' is assumed
+    // Compare self with 'second'. Assumption is that second has space character which need to be ignored. 'self' is assumed
     // to not have any space character.
-    func matchIgnoreSpace (matchString: String) -> Bool {
-        let hasSpaces = self.contains (" ")
-        let noSpaceString = hasSpaces ? self.removeCharacters(from: " ") : self
+    func matchIgnoreSpace (with second: String) -> Bool {
+        let hasSpaces = second.contains (" ")
+        let noSpaceSecond = hasSpaces ? second.removeCharacters(from: " ") : second
         
-        return noSpaceString.localizedCaseInsensitiveContains (matchString)
+        return noSpaceSecond.localizedCaseInsensitiveContains (self)
+    }
+    
+    private func matchSingle (with second: String) -> StringMatch {
+        // 1. First do a broad check for any match
+        let hasSpaces = second.contains (" ")
+        let noSpaceSecond = hasSpaces ? second.removeCharacters (from: " ") : second
+            
+        let anyMatch = noSpaceSecond.localizedCaseInsensitiveContains (self)
+        if anyMatch == false { return .noMatch }
+            
+        // 2. Check for Exact Match (case-insensitive using localizedInsensitiveCompare, and ignoring spaces)
+        if self.localizedCaseInsensitiveCompare (noSpaceSecond) == .orderedSame {
+            return .exactMatch
+        }
+            
+        // 3. Check for Complete Word Match (case-insensitive) using Regular Expression, and without ignoring spaces
+        let pattern = "\\b\(NSRegularExpression.escapedPattern (for: self))\\b"
+        let regex = try! NSRegularExpression (pattern: pattern, options: [.caseInsensitive])
+        let range = NSRange (location: 0, length: second.utf16.count)
+        if regex.firstMatch (in: second, options: [], range: range) != nil {
+            return .wordMatch
+        }
+            
+        // 4. Return a partialMatch
+        return .partialMatch
+    }
+    
+    func match (with second: String, separatorChars: String? = nil) -> StringMatch {
+        guard let separatorChars else { return matchSingle (with: second) }
+        
+        let splitSubStrings = second.split (whereSeparator: {
+            for character in separatorChars {
+                if $0 == character { return true }
+            }
+            return false
+        })
+        
+        for splitSubstring in splitSubStrings {
+            let secondString = String (splitSubstring)
+            let singleMatch = self.matchSingle (with: secondString)
+            if singleMatch != .noMatch { return singleMatch }
+        }
+        return .noMatch
     }
 }
