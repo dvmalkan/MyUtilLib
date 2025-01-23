@@ -6,11 +6,11 @@
 //
 import Foundation
 
-public enum StringMatch {
-    case exactMatch
-    case wordMatch
+public enum StringMatch: Int {
+    case noMatch = 0
     case partialMatch
-    case noMatch
+    case wordMatch
+    case exactMatch
 }
 
 /// An extension to String
@@ -57,7 +57,7 @@ public extension String {
         return noSpaceSecond.localizedCaseInsensitiveContains (self)
     }
     
-    private func matchSingle (with second: String) -> StringMatch {
+    private func matchSingle (with second: String, selfRegex: NSRegularExpression) -> StringMatch {
         // 1. First do a broad check for any match
         let hasSpaces = second.contains (" ")
         let noSpaceSecond = hasSpaces ? second.removeCharacters (from: " ") : second
@@ -70,11 +70,9 @@ public extension String {
             return .exactMatch
         }
             
-        // 3. Check for Complete Word Match (case-insensitive) using Regular Expression, and without ignoring spaces
-        let pattern = "\\b\(NSRegularExpression.escapedPattern (for: self))\\b"
-        let regex = try! NSRegularExpression (pattern: pattern, options: [.caseInsensitive])
+        // 3. Check for Complete Word Match (case-insensitive) using supplied Regular Expression, and without ignoring spaces
         let range = NSRange (location: 0, length: second.utf16.count)
-        if regex.firstMatch (in: second, options: [], range: range) != nil {
+        if selfRegex.firstMatch (in: second, options: [], range: range) != nil {
             return .wordMatch
         }
             
@@ -82,8 +80,16 @@ public extension String {
         return .partialMatch
     }
     
+    // Match 'self' with 'second'. If separatorChars is not nil, then second is split into multiple words, and then 'self' is matched
+    // with each 'second word'.
     func match (with second: String, separatorChars: String? = nil) -> StringMatch {
-        guard let separatorChars else { return matchSingle (with: second) }
+        
+        // Pre-compile a regex pattern of self up-front. Just a simple potential optimization,
+        // when matching with multiple 'second word's.
+        let pattern = "\\b\(NSRegularExpression.escapedPattern (for: self))\\b"
+        let selfRegex = try! NSRegularExpression (pattern: pattern, options: [.caseInsensitive])
+        
+        guard let separatorChars else { return matchSingle (with: second, selfRegex: selfRegex) }
         
         let splitSubStrings = second.split (whereSeparator: {
             for character in separatorChars {
@@ -94,7 +100,7 @@ public extension String {
         
         for splitSubstring in splitSubStrings {
             let secondString = String (splitSubstring)
-            let singleMatch = self.matchSingle (with: secondString)
+            let singleMatch = self.matchSingle (with: secondString, selfRegex: selfRegex)
             if singleMatch != .noMatch { return singleMatch }
         }
         return .noMatch
