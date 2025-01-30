@@ -15,9 +15,23 @@ public enum StringMatch: Int {
 
 /// An extension to String
 public extension String {
-
+    // Adapted from https://stackoverflow.com/questions/28107051/convert-string-to-bool-in-swift-via-api-or-most-swift-like-approach
+    var bool: Bool? {
+        switch self.lowercased () {
+        case "true", "t", "yes", "y":
+            return true
+        case "false", "f", "no", "n", "":
+            return false
+        default:
+            if let int = Int(self) {
+                return int != 0
+            }
+            return nil
+        }
+    }
+    
     // Adapted from https://stackoverflow.com/questions/70118711/subscript-is-unavailable-cannot-subscript-string-with-an-int-use-a-strin
-    subscript(_ idx: Int) -> Character {
+    subscript (_ idx: Int) -> Character {
         self[self.index (self.startIndex, offsetBy: idx)]
         }
     
