@@ -89,13 +89,20 @@ public extension String {
         if selfRegex.firstMatch (in: second, options: [], range: range) != nil {
             return .wordMatch
         }
-            
+        if hasSpaces {
+            let noSpaceRange = NSRange (location: 0, length: noSpaceSecond.utf16.count)
+            if selfRegex.firstMatch (in: noSpaceSecond, options: [], range: noSpaceRange) != nil {
+                return .wordMatch
+            }
+        }
+
         // 4. Return a partialMatch
         return .partialMatch
     }
     
-    // Match 'self' with 'second'. If separatorChars is not nil, then second is split into multiple words, and then 'self' is matched
-    // with each 'second word'.
+    // Match 'self' String with 'second' string.
+    // If separatorChars is not nil, then the 'second' string is split into multiple words seperated by the given separatorChars,
+    // then 'self' is matched with each such word from the 'second' String.
     func match (with second: String, separatorChars: String? = nil) -> StringMatch {
         
         // Pre-compile a regex pattern of self up-front. Just a simple potential optimization,
