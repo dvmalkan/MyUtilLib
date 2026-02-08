@@ -7,25 +7,24 @@
 
 import Foundation
 
-// PersistentLog stores messages in an applog.txt file. This file can then be extracted out from the user's box for examination purposes.
+// PersistentLog stores messages in specified text log file. This file can then be extracted out from the user's box for examination purposes.
 @available(macOS 10.15.4, *)
 @available(iOS 13.4.0, *)
 public final class PersistentLog {
 
     private var isEnabled: Bool = false
     
-    private let maxLogFileSize: UInt64 = 500_000
+    private let maxLogFileSize: UInt64 = 5_000_000  // Set at a hard-code 5MB limit.
     private var maxLogFileSizeReached: Bool = false
     
     private let logFileName: String
     private var fileHandle: FileHandle?
-    private var fileURL: URL
+    public private(set) var fileURL: URL
     
     public init (logFileName: String) {
         self.logFileName = logFileName
         fileURL = FileManager.default.urls (for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent (logFileName)
     }
-    
 
     // Call with appendToExisting = True on app launch to restore previous enabled state without recreating the file
     public func enable () {
@@ -65,6 +64,7 @@ public final class PersistentLog {
             do {
                 self.fileHandle = try FileHandle (forWritingTo: fileURL)
             } catch {
+                self.fileHandle = nil
                 isEnabled = false   // If we cannot recreate the fileHandle then set isEnabled to false
             }
         }
@@ -76,7 +76,7 @@ public final class PersistentLog {
     
     private func close () {
         try? fileHandle?.close ()
-        fileHandle = nil
+        self.fileHandle = nil
     }
 
     private func writeLine (_ line: String) {
@@ -86,13 +86,13 @@ public final class PersistentLog {
         else { return }
 
         do {
-            try fileHandle.write(contentsOf: data)
+            try fileHandle.write (contentsOf: data)
         } catch {
             // Do nothing.
         }
     }
 
-    func write (_ line: String) {
+    public func write (_ line: String) {
         guard isEnabled else { return }
         if maxLogFileSizeReached { return }
         
@@ -115,9 +115,4 @@ public final class PersistentLog {
         
         return true
     }
-
-    public func exportURL () -> URL {
-        fileURL
-    }
 }
-
