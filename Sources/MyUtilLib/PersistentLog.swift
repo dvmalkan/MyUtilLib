@@ -7,31 +7,36 @@
 
 import Foundation
 
+private let MAX_LOG_FILE_SIZE: UInt64 = 5_000_000  // Set at a hard-coded 5MB limit.
+
 // PersistentLog stores messages in specified text log file. This file can then be extracted out from the user's box for examination purposes.
 @available(macOS 10.15.4, *)
 @available(iOS 13.4.0, *)
 public final class PersistentLog {
 
+    private let logFileName: String
     private var isEnabled: Bool = false
     
-    private let maxLogFileSize: UInt64 = 5_000_000  // Set at a hard-code 5MB limit.
+    public private(set) var fileURL: URL
+    private var fileHandle: FileHandle?
+    
     private var maxLogFileSizeReached: Bool = false
     
-    private let logFileName: String
-    private var fileHandle: FileHandle?
-    public private(set) var fileURL: URL
-    
-    public init (logFileName: String) {
+    public init (logFileName: String, enable: Bool = false) {
         self.logFileName = logFileName
-        fileURL = FileManager.default.urls (for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent (logFileName)
+        
+        self.fileURL = FileManager.default.urls (for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent (logFileName)
+        
+        if enable {
+            self.enable ()
+        }
     }
 
-    // Call with appendToExisting = True on app launch to restore previous enabled state without recreating the file
     public func enable () {
         guard !isEnabled else { return }
 
         if !logFileExists () {
-            // Create a fresh file when not appending, or when the file doesn't exist
+            // Create a fresh file when the file doesn't exist
             FileManager.default.createFile(atPath: fileURL.path, contents: nil)
         }
         
@@ -110,7 +115,7 @@ public final class PersistentLog {
         guard
             let attrs = try? FileManager.default.attributesOfItem (atPath: fileURL.path),
             let size = attrs[.size] as? UInt64,
-            size > maxLogFileSize
+            size > MAX_LOG_FILE_SIZE
         else { return false }
         
         return true
