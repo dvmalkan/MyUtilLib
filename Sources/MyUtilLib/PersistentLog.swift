@@ -13,19 +13,15 @@ private let MAX_LOG_FILE_SIZE: UInt64 = 5_000_000  // Set at a hard-coded 5MB li
 @available(macOS 10.15.4, *)
 @available(iOS 13.4.0, *)
 public final class PersistentLog {
-
-    private let logFileName: String
-    private var isEnabled: Bool = false
     
     public private(set) var fileURL: URL
     private var fileHandle: FileHandle?
     
+    private var isEnabled: Bool = false
     private var maxLogFileSizeReached: Bool = false
     
-    public init (logFileName: String, enable: Bool = false) {
-        self.logFileName = logFileName
-        
-        self.fileURL = FileManager.default.urls (for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent (logFileName)
+    public init (fileURL: URL, enable: Bool = false) {
+        self.fileURL = fileURL
         
         if enable {
             self.enable ()
@@ -37,7 +33,7 @@ public final class PersistentLog {
 
         if !logFileExists () {
             // Create a fresh file when the file doesn't exist
-            FileManager.default.createFile(atPath: fileURL.path, contents: nil)
+            FileManager.default.createFile (atPath: fileURL.path, contents: nil)
         }
         
         do {
