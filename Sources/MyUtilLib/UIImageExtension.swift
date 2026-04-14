@@ -41,5 +41,21 @@ public extension UIImage {
         UIGraphicsEndImageContext ()
         return combinedImage!
     }
-}
+    
+    // Downscale image to a target max dimension to keep listed images in gui lightweight
+    func scaledDown (maxDimension: CGFloat = 80) -> UIImage {
+        let maxSide = max (size.width, size.height)
+        guard maxSide > maxDimension else { return self }
+        
+        let scaleFactor = maxDimension / maxSide
+        let newSize = CGSize (width: size.width * scaleFactor, height: size.height * scaleFactor)
+
+        let format = UIGraphicsImageRendererFormat.default ()
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer (size: newSize, format: format)
+        return renderer.image { _ in
+            self.draw (in: CGRect(origin: .zero, size: newSize))
+        }
+    }
+} // UIImage
 #endif
