@@ -71,7 +71,8 @@ public extension String {
         return noSpaceSecond.localizedCaseInsensitiveContains (self)
     }
     
-    private func matchSingle (with second: String, selfRegex: NSRegularExpression) -> StringMatch {
+    /*
+    private func matchSingleOriginal (with second: String, selfRegex: NSRegularExpression) -> StringMatch {
         // 1. First do a broad check for any match
         let hasSpaces = second.contains (" ")
         let noSpaceSecond = hasSpaces ? second.removeCharacters (from: " ") : second
@@ -103,14 +104,14 @@ public extension String {
     // Match 'self' String with 'second' string.
     // If separatorChars is not nil, then the 'second' string is split into multiple words seperated by the given separatorChars,
     // then 'self' is matched with each such word from the 'second' String.
-    func match (with second: String, separatorChars: String? = nil) -> StringMatch {
+    func matchOriginal (with second: String, separatorChars: String? = nil) -> StringMatch {
         
         // Pre-compile a regex pattern of self up-front. Just a simple potential optimization,
         // when matching with multiple 'second word's.
         let pattern = "\\b\(NSRegularExpression.escapedPattern (for: self))\\b"
         let selfRegex = try! NSRegularExpression (pattern: pattern, options: [.caseInsensitive])
         
-        guard let separatorChars else { return matchSingle (with: second, selfRegex: selfRegex) }
+        guard let separatorChars else { return matchSingleOriginal (with: second, selfRegex: selfRegex) }
         
         let splitSubStrings = second.split (whereSeparator: {
             for character in separatorChars {
@@ -121,9 +122,80 @@ public extension String {
         
         for splitSubstring in splitSubStrings {
             let secondString = String (splitSubstring)
-            let singleMatch = self.matchSingle (with: secondString, selfRegex: selfRegex)
+            let singleMatch = self.matchSingleOriginal (with: secondString, selfRegex: selfRegex)
             if singleMatch != .noMatch { return singleMatch }
         }
+        return .noMatch
+    }
+     */
+
+    private func normalizedForMatching () -> String {
+        
+        let allowed = CharacterSet.alphanumerics
+        
+        return String (
+            self
+                .precomposedStringWithCanonicalMapping
+                .folding (options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+                .unicodeScalars
+                .filter {
+                    allowed.contains ($0) ||
+                    CharacterSet.whitespaces.contains ($0)
+                }
+        )
+    }
+    
+    private func removingWhitespace () -> String {
+            String (unicodeScalars.filter {
+                !CharacterSet.whitespacesAndNewlines.contains ($0)
+            })
+        }
+    
+    private func matchSingle (with second: String) -> StringMatch {
+
+        let lhs = self.normalizedForMatching ()
+        let rhs = second.normalizedForMatching ()
+
+        // Fast reject
+        if !rhs.contains (lhs) {
+            return .noMatch
+        }
+
+        // Exact match ignoring whitespace
+        if lhs.removingWhitespace () == rhs.removingWhitespace () {
+            return .exactMatch
+        }
+
+        // Word match
+        let words = rhs.split (whereSeparator: {
+            !$0.isLetter && !$0.isNumber
+        })
+
+        if words.contains (where: { String($0) == lhs }) {
+            return .wordMatch
+        }
+
+        return .partialMatch
+    }
+    
+    // Match 'self' String with 'second' string.
+    // If separatorChars is not nil, then the 'second' string is split into multiple words seperated by the given separatorChars,
+    // then 'self' is matched with each such word from the 'second' String.
+    func match (with second: String, separatorChars: String? = nil) -> StringMatch {
+
+        guard let separatorChars else {
+            return matchSingle (with: second)
+        }
+
+        let separatorSet = Set (separatorChars)
+
+        for token in second.split (whereSeparator: { separatorSet.contains($0) }) {
+            let result = matchSingle (with: String(token))
+            if result != .noMatch {
+                return result
+            }
+        }
+
         return .noMatch
     }
 }
