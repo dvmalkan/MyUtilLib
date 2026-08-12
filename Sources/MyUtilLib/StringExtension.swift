@@ -152,30 +152,37 @@ public extension String {
         }
     
     private func matchSingle (with second: String) -> StringMatch {
-
         let lhs = self.normalizedForMatching ()
         let rhs = second.normalizedForMatching ()
 
-        // Fast reject
-        if !rhs.contains (lhs) {
+        // Empty strings cannot meaningfully match.
+        guard !lhs.isEmpty, !rhs.isEmpty else {
             return .noMatch
         }
 
-        // Exact match ignoring whitespace
+        // Exact match, ignoring whitespace.
         if lhs.removingWhitespace () == rhs.removingWhitespace () {
             return .exactMatch
         }
 
-        // Word match
-        let words = rhs.split (whereSeparator: {
+        // Word match.
+        //
+        // Split on anything that is neither a letter nor a number.
+        // This makes punctuation, whitespace, etc. word boundaries.
+        let words = rhs.split {
             !$0.isLetter && !$0.isNumber
-        })
+        }
 
-        if words.contains (where: { String($0) == lhs }) {
+        if words.contains (where: { String ($0) == lhs }) {
             return .wordMatch
         }
 
-        return .partialMatch
+        // Partial match.
+        if rhs.contains (lhs) {
+            return .partialMatch
+        }
+
+        return .noMatch
     }
     
     // Match 'self' String with 'second' string.
@@ -197,5 +204,74 @@ public extension String {
         }
 
         return .noMatch
+    }
+}
+
+public extension String {
+
+    /// Attempts to match the beginning of the string against one of the supplied phrases.
+    ///
+    /// Matching is case-insensitive and ignores whitespace between the
+    /// command and the remaining string.
+    ///
+    /// Example:
+    ///
+    ///     "Play the Beatles".matchPhrase (
+    ///         from: ["Play", "Listen to", "Find"]
+    ///     )
+    ///
+    ///     → (matched: "Play", remaining: "the Beatles")
+    ///
+    func matchPhrase (from phrases: [String]) -> (matched: String, remaining: String)? {
+
+        let input = self.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Try longest phrases first. This is important when the list
+        // contains both "Listen" and "Listen to".
+        let sortedCommands = phrases.sorted {
+            $0.count > $1.count
+        }
+
+        for command in sortedCommands {
+
+            let command = command.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard !command.isEmpty else {
+                continue
+            }
+
+            // A command must occupy complete words. Thus "Playful"
+            // must not match "Play".
+            if input.count < command.count {
+                continue
+            }
+
+            let prefix = String(input.prefix(command.count))
+
+            guard prefix.caseInsensitiveCompare(command) == .orderedSame else {
+                continue
+            }
+
+            // Make sure the command ends at a word boundary.
+            if input.count > command.count {
+
+                let index = input.index (input.startIndex, offsetBy: command.count)
+
+                guard input[index].isWhitespace else {
+                    continue
+                }
+            }
+
+            let remainingStart = input.index(
+                input.startIndex,
+                offsetBy: command.count
+            )
+
+            let remaining = String (input[remainingStart...]).trimmingCharacters (in: .whitespacesAndNewlines)
+
+            return (matched: command, remaining: remaining)
+        }
+
+        return nil
     }
 }
