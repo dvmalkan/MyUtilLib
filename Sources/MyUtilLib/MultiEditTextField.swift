@@ -18,7 +18,8 @@ public struct MultiEditTextField: View {
     let foregroundStyle: AnyShapeStyle
     let editForegroundStyle: AnyShapeStyle
     let keyboardType: UIKeyboardType
-    let onCommit: (String) -> Void
+    let onSubmit: (String) -> Void
+    let onChange: (String) -> Void
 
     private var isMultiple: Bool {
         text == multiValuesText
@@ -26,17 +27,17 @@ public struct MultiEditTextField: View {
 
     @FocusState private var isFocused: Bool
     @State private var localText: String
-    @State private var hasEdited = false
 
     public init (
         text: String,
         multiValuesText: String,
         alignment: Alignment = .trailing,
         textAlignment: TextAlignment = .trailing,
-        foregroundStyle: AnyShapeStyle = AnyShapeStyle(.secondary),
-        editForegroundStyle: AnyShapeStyle = AnyShapeStyle(.primary),
+        foregroundStyle: AnyShapeStyle = AnyShapeStyle (.secondary),
+        editForegroundStyle: AnyShapeStyle = AnyShapeStyle (.primary),
         keyboardType: UIKeyboardType = .default,
-        onCommit: @escaping (String) -> Void
+        onSubmit: @escaping (String) -> Void,
+        onChange: @escaping (String) -> Void
     ) {
         self.text = text
         self.multiValuesText = multiValuesText
@@ -45,7 +46,8 @@ public struct MultiEditTextField: View {
         self.foregroundStyle = foregroundStyle
         self.editForegroundStyle = editForegroundStyle
         self.keyboardType = keyboardType
-        self.onCommit = onCommit
+        self.onSubmit = onSubmit
+        self.onChange = onChange
 
         let isMultiple = text == multiValuesText
         self._localText = State (initialValue: isMultiple ? "" : text)
@@ -57,33 +59,9 @@ public struct MultiEditTextField: View {
             .keyboardType (keyboardType)
             .multilineTextAlignment (textAlignment)
             .foregroundStyle (isFocused ? editForegroundStyle : foregroundStyle)
-            .onChange(of: isFocused) { focused in
-                if focused {
-                    hasEdited = false
-                } else {
-                    commitIfNeeded ()
-                }
-            }
-            .onChange (of: localText) { _ in
-                if isFocused {
-                    hasEdited = true
-                }
-            }
-            .onChange (of: text) { newText in
-                if !isFocused {
-                    localText = newText == multiValuesText ? "" : newText
-                    hasEdited = false
-                }
+            .onSubmit { onSubmit (localText) }
+            .onChange (of: localText) { newValue in
+                onChange (newValue)
             }
     }
-
-    private func commitIfNeeded () {
-        guard hasEdited else {
-            return
-        }
-
-        onCommit (localText)
-
-        hasEdited = false
-    }
-}
+} // MultiEditTextField
