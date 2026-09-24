@@ -51,14 +51,23 @@ public struct MultiEditTextField: View {
     }
     
     public var body: some View {
-        TextField (isMultiple ? multiValuesText : "", text: $localText)
-            .focused ($isFocused)
-            .keyboardType (keyboardType)
-            .multilineTextAlignment (textAlignment)
-            .foregroundStyle (foregroundStyle)
-            .onSubmit { onSubmit (localText) }
-            .onChange (of: localText) { newValue in
-                onChange (newValue)
-            }
+        HStack {
+            TextField (isMultiple ? multiValuesText : "", text: $localText)
+                .focused ($isFocused)
+                .keyboardType (keyboardType)
+                .multilineTextAlignment (textAlignment)
+                .foregroundStyle (foregroundStyle)
+                .onSubmit { onSubmit (localText) }
+                .onChange (of: localText) { newValue in
+                    onChange (newValue)
+                }
+            if isFocused {
+                    Button {
+                        isFocused = false
+                    } label: {
+                        Image (systemName: "xmark.circle.fill")
+                    }
+                }
+        }
     }
 } // MultiEditTextField
