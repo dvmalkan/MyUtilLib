@@ -15,6 +15,7 @@ public enum StringMatch: Int {
 
 /// An extension to String
 public extension String {
+        
     // Adapted from https://stackoverflow.com/questions/28107051/convert-string-to-bool-in-swift-via-api-or-most-swift-like-approach
     var bool: Bool? {
         switch self.lowercased () {
@@ -204,6 +205,23 @@ public extension String {
         }
 
         return .noMatch
+    }
+    
+    /// Converts an ISO8601 date string to a condensed date string.
+    ///
+    /// The resulting string uses the same age-dependent representation as
+    /// `Date.condensedString()`.
+    ///
+    /// - Returns: A condensed date string, or the original string if it
+    ///   cannot be parsed as an ISO8601 date.
+    func condensedDateString () -> String {
+        let formatter = ISO8601DateFormatter ()
+        
+        guard let date = formatter.date (from: self) else {
+            return self
+        }
+        
+        return date.condensedString ()
     }
 }
 
