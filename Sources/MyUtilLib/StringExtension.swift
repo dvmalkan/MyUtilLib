@@ -161,8 +161,10 @@ public extension String {
             return .noMatch
         }
 
+        let lhsNoSpace = lhs.removingWhitespace ()
+        let rhsNoSpace = rhs.removingWhitespace ()
         // Exact match, ignoring whitespace.
-        if lhs.removingWhitespace () == rhs.removingWhitespace () {
+        if lhsNoSpace == rhsNoSpace {
             return .exactMatch
         }
 
@@ -179,7 +181,7 @@ public extension String {
         }
 
         // Partial match.
-        if rhs.contains (lhs) {
+        if rhsNoSpace.contains (lhsNoSpace) {
             return .partialMatch
         }
 
